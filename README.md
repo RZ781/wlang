@@ -1,2 +1,2 @@
-# vertex
-The Vertex programming language
+# Wlang
+The W programming language
