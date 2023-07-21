@@ -2,104 +2,35 @@
 #include <vector>
 #include "lexer.hpp"
 #include "parser.hpp"
+#include "nodes.hpp"
 
-// expressions
-class IntExpr: public Expression {
-        private:
-        int value;
-        public:
-        IntExpr(int x) {
-                value = x;
+Type* Parser::type(void) {
+        ClassType* base = new ClassType(eat(Id).data);
+        if (peek().type == Symbol && peek().data == "<") { // template
+                eat(Token {Symbol, "<"});
+                while (peek().type != Symbol) {
+                        base->append(type());
+                        if (!(peek().type == Symbol && peek().data == ">"))
+                                eat(Token {Symbol, ","});
+                }
+                eat(Token {Symbol, ">"});
         }
-        void print(void) {
-                std::cout << value;
+        Type* t = base;
+        while (peek().type == Symbol && (peek().data == "*" || peek().data == "[")) {
+                if (peek().data == "*") { // pointer
+                        eat(Token {Symbol, "*"});
+                        t = new PointerType(t);
+                } else if (peek().data == "[") { // array
+                        eat(Token {Symbol, "["});
+                        int length = 0;
+                        if (peek().type == Int)
+                                length = std::stoi(eat(Int).data);
+                        eat(Token {Symbol, "]"});
+                        t = new ArrayType(t, length);
+                }
         }
-        int eval(void) {
-                return value;
-        }
-};
-class StrExpr: public Expression {
-        private:
-        std::string value;
-        public:
-        StrExpr(std::string x) {
-                value = x;
-        }
-        void print(void) {
-                std::cout << '"' << value << '"';
-        }
-        int eval(void) {
-                return 574136;
-        }
-};
-class VarExpr: public Expression {
-        private:
-        std::string id;
-        public:
-        VarExpr(std::string x) {
-                id = x;
-        }
-        void print(void) {
-                std::cout << id;
-        }
-        int eval(void) {
-                return 44414813;
-        }
-};
-
-// statements
-class ExprStmt: public Statement {
-        private:
-        Expression* expr;
-        public:
-        ExprStmt(Expression* e) {
-                expr = e;
-        }
-        void print(void) {
-                expr->print();
-                std::cout << ';';
-        }
-        void eval(void) {
-                std::cout << expr->eval() << std::endl;
-        }
-};
-class Block: public Statement {
-        private:
-        std::vector<Statement*> body;
-        public:
-        Block(void) {}
-        void print(void) {
-                std::cout << '{';
-                for (Statement* stmt: body)
-                        stmt->print();
-                std::cout << '}';
-        }
-        void eval(void) {
-                for (Statement* stmt: body)
-                        stmt->eval();
-        }
-        void append(Statement* stmt) {
-                body.push_back(stmt);
-        }
-};
-class Function: public Statement {
-        private:
-        std::string name;
-        Statement* body;
-        public:
-        Function(std::string f, Statement* stmt) {
-                name = f;
-                body = stmt;
-        }
-        void print(void) {
-                std::cout << name << "() ";
-                body->print();
-        }
-        void eval(void) {
-                if (name == "main")
-                        body->eval();
-        }
-};
+        return t;
+}
 
 Expression* Parser::expr(void) {
         Token token = next();
@@ -118,23 +49,23 @@ Expression* Parser::expr(void) {
 
 Statement* Parser::stmt(void) {
         Token token = peek();
-        if (token.type == Id && token.data == "func") {
+        if (token.type == Id && token.data == "func") { // function
                 eat(Token {Id, "func"});
                 Token name = eat(Id);
                 eat(Token {Symbol, "("});
                 eat(Token {Symbol, ")"});
                 eat(Token {Symbol, ":"});
-                eat(Id);
+                Type* t = type();
                 Statement* body = stmt();
-                return new Function(name.data, body);
-        } else if (token.type == Symbol && token.data == "{") {
+                return new Function(name.data, t, body);
+        } else if (token.type == Symbol && token.data == "{") { // block
                 auto block = new Block();
                 eat(Token {Symbol, "{"});
                 while (!(peek().type == Symbol && peek().data == "}"))
                         block->append(stmt());
                 eat(Token {Symbol, "}"});
                 return block;
-        } else if (token.type == Int || token.type == Str || token.type == Id) {
+        } else if (token.type == Int || token.type == Str || token.type == Id) { // expression
                 auto stmt = new ExprStmt(expr());
                 eat(Token {Symbol, ";"});
                 return stmt;

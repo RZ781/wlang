@@ -30,8 +30,10 @@ Token Lexer::eat(token_type type) {
 
 Token Lexer::eat(Token token) {
         Token t = next();
-        if (t.type != token.type || t.data != token.data)
+        if (t.type != token.type || t.data != token.data) {
                 std::cerr << "expected " << token.type << " " << token.data << std::endl;
+                throw;
+        }
         return token;
 }
 

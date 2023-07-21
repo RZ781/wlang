@@ -9,12 +9,17 @@ class Statement {
 class Expression {
         public:
         virtual void print(void) = 0;
-        virtual int eval(void) = 0;
+        virtual std::string eval(void) = 0;
+};
+class Type {
+        public:
+        virtual void print(void) = 0;
 };
 
 class Parser: public Lexer {
         private:
         Expression* expr(void);
+        Type* type(void);
         public:
         using Lexer::Lexer;
         Statement* stmt(void);
