@@ -1,26 +1,14 @@
 #pragma once
+#include <memory>
 #include "lexer.hpp"
-
-class Statement {
-        public:
-        virtual void print(void) = 0;
-        virtual void eval(void) = 0;
-};
-class Expression {
-        public:
-        virtual void print(void) = 0;
-        virtual std::string eval(void) = 0;
-};
-class Type {
-        public:
-        virtual void print(void) = 0;
-};
+#include "type.hpp"
+#include "nodes.hpp"
 
 class Parser: public Lexer {
-        private:
-        Expression* expr(void);
-        Type* type(void);
-        public:
-        using Lexer::Lexer;
-        Statement* stmt(void);
+	private:
+	std::unique_ptr<Expression> expr(void);
+	std::unique_ptr<Type> type(void);
+	public:
+	using Lexer::Lexer;
+	std::unique_ptr<Statement> stmt(void);
 };
