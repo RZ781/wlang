@@ -2,7 +2,7 @@
 #include <memory>
 #include "parser.hpp"
 #include "ir.hpp"
-
+ 
 int main() {
 	Parser parser("main.w");
 	Module module;
