@@ -2,8 +2,8 @@
 #include <fstream>
 #include "lexer.hpp"
 
-Lexer::Lexer(std::string name) {
-	f = std::ifstream(name);
+Lexer::Lexer(std::string filename) {
+	f = std::ifstream(filename);
 	peek_token = lex();
 }
 

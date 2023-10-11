@@ -12,6 +12,9 @@ const Type& LoadInt::get_type(void) {
 void LoadInt::print(void) {
 	std::cout << "load_int " << value << std::endl;
 }
+void LoadInt::visit(IRVisitor& visitor, int n) {
+	visitor.visit_int(*this, n);
+}
 
 const ClassType LoadStr::type("str");
 LoadStr::LoadStr(std::string x) {
@@ -23,6 +26,9 @@ const Type& LoadStr::get_type(void) {
 void LoadStr::print(void) {
 	std::cout << "load_str \"" << value << '"' << std::endl;
 }
+void LoadStr::visit(IRVisitor& visitor, int n) {
+	visitor.visit_str(*this, n);
+}
 
 LoadGlobal::LoadGlobal(std::string x) {
 	name = x;
@@ -33,6 +39,9 @@ const Type& LoadGlobal::get_type(void) {
 }
 void LoadGlobal::print(void) {
 	std::cout << "load_gl " << name << std::endl;
+}
+void LoadGlobal::visit(IRVisitor& visitor, int n) {
+	visitor.visit_global(*this, n);
 }
 
 FuncCall::FuncCall(int f) {
@@ -50,4 +59,7 @@ void FuncCall::print(void) {
 }
 void FuncCall::push(int arg) {
 	args.push_back(arg);
+}
+void FuncCall::visit(IRVisitor& visitor, int n) {
+	visitor.visit_func_call(*this, n);
 }

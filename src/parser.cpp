@@ -6,31 +6,37 @@
 #include "nodes.hpp"
 #include "type.hpp"
 
+Parser::Parser(std::string filename): lexer(filename) {}
+
+bool Parser::more(void) {
+	return lexer.more();
+}
+
 std::unique_ptr<Type> Parser::type(void) {
-	auto base = std::make_unique<ClassType>(ClassType(eat(Id).data));
-	if (peek().type == Symbol && peek().data == "<") { // template
-		eat(Token {Symbol, "<"});
-		while (peek().type != Symbol) {
+	auto base = std::make_unique<ClassType>(ClassType(lexer.eat(Id).data));
+	if (lexer.peek().type == Symbol && lexer.peek().data == "<") { // template
+		lexer.eat(Token {Symbol, "<"});
+		while (lexer.peek().type != Symbol) {
 			base->append(type());
-			if (!(peek().type == Symbol && peek().data == ">"))
-				eat(Token {Symbol, ","});
+			if (!(lexer.peek().type == Symbol && lexer.peek().data == ">"))
+				lexer.eat(Token {Symbol, ","});
 		}
-		eat(Token {Symbol, ">"});
+		lexer.eat(Token {Symbol, ">"});
 	}
 	std::unique_ptr<Type> t = std::move(base);
-	while (peek().type == Symbol && peek().data == "[") {
-		eat(Token {Symbol, "["});
+	while (lexer.peek().type == Symbol && lexer.peek().data == "[") {
+		lexer.eat(Token {Symbol, "["});
 		int length = 0;
-		if (peek().type == Int)
-			length = std::stoi(eat(Int).data);
-		eat(Token {Symbol, "]"});
+		if (lexer.peek().type == Int)
+			length = std::stoi(lexer.eat(Int).data);
+		lexer.eat(Token {Symbol, "]"});
 		t = std::unique_ptr<Type>(new ArrayType(std::move(t), length));
 	}
 	return t;
 }
 
 std::unique_ptr<Expression> Parser::expr(void) {
-	Token token = next();
+	Token token = lexer.next();
 	std::unique_ptr<Expression> e;
 	switch (token.type) {
 		case Id:
@@ -46,43 +52,52 @@ std::unique_ptr<Expression> Parser::expr(void) {
 			std::cerr << "unexpected token " << token.type << std::endl;
 			throw;
 	}
-	while (peek().type == Symbol && peek().data == "(") {
+	while (lexer.peek().type == Symbol && lexer.peek().data == "(") {
 		auto call = std::make_unique<CallExpr>(CallExpr(std::move(e)));
-		eat(Token {Symbol, "("});
+		lexer.eat(Token {Symbol, "("});
 		while (1) {
 			call->push(expr());
-			if (peek().type == Symbol && peek().data == ",")
-				eat(Token {Symbol, ","});
+			if (lexer.peek().type == Symbol && lexer.peek().data == ",")
+				lexer.eat(Token {Symbol, ","});
 			else
 				break;
 		}
-		eat(Token {Symbol, ")"});
+		lexer.eat(Token {Symbol, ")"});
 		e = std::move(call);
 	};
 	return e;
 }
 
-std::unique_ptr<Statement> Parser::stmt(void) {
-	Token token = peek();
-	if (token.type == Id && token.data == "func") { // function
-		eat(Token {Id, "func"});
-		Token name = eat(Id);
-		eat(Token {Symbol, "("});
-		eat(Token {Symbol, ")"});
-		eat(Token {Symbol, ":"});
+std::unique_ptr<Declaration> Parser::decl(void) {
+	Token token = lexer.peek();
+	if (token.type == Id  && token.data == "func") { // function	
+		lexer.eat(Token {Id, "func"});
+		Token name = lexer.eat(Id);
+		lexer.eat(Token {Symbol, "("});
+		lexer.eat(Token {Symbol, ")"});
+		lexer.eat(Token {Symbol, ":"});
 		std::unique_ptr<Type> t = type();
 		std::unique_ptr<Statement> body = stmt();
-		return std::make_unique<Function>(Function(name.data, std::move(t), std::move(body)));
+		return std::make_unique<FuncDecl>(FuncDecl(name.data, std::move(t), std::move(body)));
+	}
+	std::cerr << "unexpected token " << token.type << std::endl;
+	throw;
+}
+
+std::unique_ptr<Statement> Parser::stmt(void) {
+	Token token = lexer.peek();
+	if (token.type == Id && token.data == "func") { // function
+		return std::make_unique<DeclStmt>(decl());
 	} else if (token.type == Symbol && token.data == "{") { // block
-		auto block = std::make_unique<Block>(Block());
-		eat(Token {Symbol, "{"});
-		while (!(peek().type == Symbol && peek().data == "}"))
+		auto block = std::make_unique<BlockStmt>(BlockStmt());
+		lexer.eat(Token {Symbol, "{"});
+		while (!(lexer.peek().type == Symbol && lexer.peek().data == "}"))
 			block->append(stmt());
-		eat(Token {Symbol, "}"});
+		lexer.eat(Token {Symbol, "}"});
 		return block;
 	} else if (token.type == Int || token.type == Str || token.type == Id) { // expression
 		auto stmt = std::make_unique<ExprStmt>(ExprStmt(expr()));
-		eat(Token {Symbol, ";"});
+		lexer.eat(Token {Symbol, ";"});
 		return stmt;
 	}
 	std::cerr << "unexpected token " << token.type << std::endl;

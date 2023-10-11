@@ -20,7 +20,7 @@ class Lexer {
 	Token peek_token;
 	Token lex(void);
 	public:
-	Lexer(std::string name);
+	Lexer(std::string filename);
 	bool more(void);
 	Token peek(void);
 	Token next(void);

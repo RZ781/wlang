@@ -53,8 +53,8 @@ void ExprStmt::print(int indent) {
         std::cout << ';' << std::endl;
 }
 
-Block::Block(void) {}
-void Block::print(int indent) {
+BlockStmt::BlockStmt(void) {}
+void BlockStmt::print(int indent) {
 	for (int i=0; i<indent; i++)
 		std::cout << '\t';
         std::cout << '{' << std::endl;
@@ -65,16 +65,24 @@ void Block::print(int indent) {
 		std::cout << '\t';
         std::cout << '}' << std::endl;
 }
-void Block::append(std::unique_ptr<Statement> stmt) {
+void BlockStmt::append(std::unique_ptr<Statement> stmt) {
         body.push_back(std::move(stmt));
 }
 
-Function::Function(std::string f, std::unique_ptr<Type> t, std::unique_ptr<Statement> stmt) {
+DeclStmt::DeclStmt(std::unique_ptr<Declaration> _decl) {
+	decl = std::move(_decl);
+}
+void DeclStmt::print(int indent) {
+	decl->print(indent);
+}
+
+// declarations
+FuncDecl::FuncDecl(std::string f, std::unique_ptr<Type> t, std::unique_ptr<Statement> stmt) {
         name = f;
         type = std::move(t);
         body = std::move(stmt);
 }
-void Function::print(int indent) {
+void FuncDecl::print(int indent) {
 	for (int i=0; i<indent; i++)
 		std::cout << '\t';
         std::cout << name << "(): ";

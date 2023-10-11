@@ -3,31 +3,31 @@
 #include "ir.hpp"
 #include "nodes.hpp"
 
-Module::Module(void) {
+Scope::Scope(void) {
 	length = 0;
 }
-int Module::push_op(std::unique_ptr<Op> op) {
+int Scope::push_op(std::unique_ptr<Op> op) {
 	code.push_back(std::move(op));
 	length++;
 	return length - 1;
 }
 
-int IntExpr::compile(Module& mod) {
+int IntExpr::compile(Scope& mod) {
 	LoadInt op(value);
 	return mod.push_op(std::make_unique<LoadInt>(op));
 }
 
-int StrExpr::compile(Module& mod) {
+int StrExpr::compile(Scope& mod) {
 	LoadStr op(value);
 	return mod.push_op(std::make_unique<LoadStr>(op));
 }
 
-int VarExpr::compile(Module& mod) {
+int VarExpr::compile(Scope& mod) {
 	LoadGlobal op(id);
 	return mod.push_op(std::make_unique<LoadGlobal>(op));
 }
 
-int CallExpr::compile(Module& mod) {
+int CallExpr::compile(Scope& mod) {
 	int f = func->compile(mod);
 	FuncCall op(f);
 	for (std::unique_ptr<Expression>& arg: args)
@@ -35,13 +35,17 @@ int CallExpr::compile(Module& mod) {
 	return mod.push_op(std::make_unique<FuncCall>(op));
 }
 
-void ExprStmt::compile(Module& mod) {
+void ExprStmt::compile(Scope& mod) {
 	expr->compile(mod);
 }
-void Block::compile(Module& mod) {
+void BlockStmt::compile(Scope& mod) {
 	for (std::unique_ptr<Statement>& stmt: body)
 		stmt->compile(mod);
 }
-void Function::compile(Module& mod) {
+void DeclStmt::compile(Scope& mod) {
+	decl->compile(mod);
+}
+
+void FuncDecl::compile(Scope& mod) {
 	body->compile(mod);
 }
